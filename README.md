@@ -177,7 +177,6 @@ Complete the sketch for all six relations (`author`, `book`, `writes`, `copy`,
 > single column of `book`?
 >
 > *Your answer:*
-
 Eine N:M-Beziehung braucht eine eigene Tabelle (writes), weil im relationalen Modell jede Spalte nur einen atomaren Wert enthalten darf (1NF).
 Mehrere author_id in einer book-Spalte würden:
 die 1. Normalform verletzen
@@ -191,7 +190,6 @@ Deshalb speichert man jede Autor–Buch-Beziehung als eigene Zeile in der Join-T
 > key.
 >
 > *Your answer:*
-
 Das zusammengesetzte Attribut (member_no, copy_no, loan_date) ist nicht eindeutig, wenn ein Mitglied denselben Copy am selben Tag mehr als einmal ausleiht (z. B. Rückgabe und erneute Ausleihe am gleichen Tag).
 
 ---
@@ -356,7 +354,6 @@ git log --oneline
 **Question 2.1:** You declared `ON DELETE RESTRICT` on both foreign keys of
 `writes`. What does this mean in practice if a librarian wants to delete an
 author who has written at least one book in the catalogue?
-
 > *Your answer:*
 Löschen eines Autors wird verhindert, wenn er noch in writes vorkommt.
 
@@ -364,7 +361,6 @@ Löschen eines Autors wird verhindert, wenn er noch in writes vorkommt.
 
 **Question 2.2:** `email` in `member` is declared `UNIQUE` but is not the
 primary key. Using the vocabulary from Lecture 03, what kind of key is it?
-
 > *Your answer:*
 email ist ein Candidate Key
 
@@ -487,6 +483,8 @@ SQL:
 
 ```sql
 -- write your query here
+SELECT * FROM copy WHERE shelf_loc LIKE 'A%';
+
 ```
 
 > Expected result: copy\_no 1 and 2.
@@ -502,6 +500,7 @@ SQL:
 
 ```sql
 -- write your query here
+SELECT title, pub_year FROM book;
 ```
 
 > Expected result: three rows, two columns each.
@@ -518,6 +517,7 @@ SQL:
 
 ```sql
 -- write your query here
+SELECT isbn, shelf_loc FROM copy WHERE shelf_loc >= 'B';
 ```
 
 > Expected result: copy\_no 3 (B-07) and copy\_no 4 (C-12).
@@ -539,6 +539,12 @@ SQL:
 
 ```sql
 -- write your query here
+SELECT m.full_name, b.title
+FROM loan l
+JOIN member m ON l.member_no = m.member_no
+JOIN copy c ON l.copy_no = c.copy_no
+JOIN book b ON c.isbn = b.isbn
+WHERE l.return_date IS NULL;
 ```
 
 > Expected result: two rows – Schneider borrowing *Database Management Systems*,
@@ -585,6 +591,10 @@ In SQL, set difference is expressed with `EXCEPT`:
 
 ```sql
 -- write your query here
+SELECT isbn FROM book
+EXCEPT
+SELECT c.isbn
+FROM copy c
 ```
 
 > Expected result: *The C Programming Language* (copy 4 was never loaned).
