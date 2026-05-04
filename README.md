@@ -53,6 +53,7 @@ git --version
 > checks and insert it here.
 >
 > `[insert screenshot]`
+<img width="802" height="179" alt="Screenshot 2026-05-04 at 12 40 11 pm" src="https://github.com/user-attachments/assets/3220f468-d92d-4cb0-addc-aed2f225af6b" />
 
 ---
 
@@ -177,12 +178,21 @@ Complete the sketch for all six relations (`author`, `book`, `writes`, `copy`,
 >
 > *Your answer:*
 
+Eine N:M-Beziehung braucht eine eigene Tabelle (writes), weil im relationalen Modell jede Spalte nur einen atomaren Wert enthalten darf (1NF).
+Mehrere author_id in einer book-Spalte würden:
+die 1. Normalform verletzen
+Abfragen und JOINs erschweren
+keine saubere referentielle Integrität erlauben
+Deshalb speichert man jede Autor–Buch-Beziehung als eigene Zeile in der Join-Tabelle.
+
 > **Question 1.2:** `loan_id` is a surrogate key even though a loan might seem
 > to be uniquely identified by `(member_no, copy_no, loan_date)`. Name one
 > realistic scenario in which that composite key would fail to be a candidate
 > key.
 >
 > *Your answer:*
+
+Das zusammengesetzte Attribut (member_no, copy_no, loan_date) ist nicht eindeutig, wenn ein Mitglied denselben Copy am selben Tag mehr als einmal ausleiht (z. B. Rückgabe und erneute Ausleihe am gleichen Tag).
 
 ---
 
@@ -294,6 +304,7 @@ sqlite3 library.db < schema.sql
 > output and insert it here.
 >
 > `[insert screenshot]`
+<img width="801" height="376" alt="Screenshot 2026-05-04 at 1 07 30 pm" src="https://github.com/user-attachments/assets/547bab21-98d7-4dbb-a9b3-99800ae217ba" />
 
 ### Task 2c – Commit
 
@@ -347,11 +358,15 @@ git log --oneline
 author who has written at least one book in the catalogue?
 
 > *Your answer:*
+Löschen eines Autors wird verhindert, wenn er noch in writes vorkommt.
+
+
 
 **Question 2.2:** `email` in `member` is declared `UNIQUE` but is not the
 primary key. Using the vocabulary from Lecture 03, what kind of key is it?
 
 > *Your answer:*
+email ist ein Candidate Key
 
 **Question 2.3:** SQLite does not enforce `CHECK` or `FOREIGN KEY` constraints
 by default. Run the following and observe what happens:
@@ -375,7 +390,9 @@ by default. Run the following and observe what happens:
 > at runtime?
 
 > *Your answer:*
-
+Beim zweiten INSERT tritt der Fehler
+FOREIGN KEY constraint failed auf.
+das zeigt, dass Constraints nur wirken, wenn sie aktiv (PRAGMA ON) sind.
 ---
 
 ## 3 – Insert Sample Data
@@ -552,6 +569,8 @@ condition into `WHERE return_date IS NULL`? Why? Refer to the formal definition
 of the outer join from Lecture 03.
 
 > *Your answer:*
+Wenn die Bedingung l.return_date IS NULL in die WHERE-Klausel verschoben wird, verschwindet der Datensatz von Koch.
+weil WHERE NULL entfernt.
 
 ### Task 4f – Set Difference
 
@@ -600,6 +619,9 @@ VALUES (999, 1, '2026-05-01');
 > foreign key column involved.
 >
 > *Your answer:*
+Der Fehler wird durch den Fremdschlüssel in der Tabelle loan ausgelöst, konkret:
+loan.member_no → member.member_no
+Da der Member mit der ID 999 nicht existiert, wird das Einfügen verhindert.
 
 ### Task 5b – Delete a member with active loans
 
@@ -616,6 +638,9 @@ DELETE FROM member WHERE member_no = 102;
 > for a library system? Justify your answer.
 >
 > *Your answer:*
+Wenn ON DELETE CASCADE verwendet wird, wird beim Löschen eines Members automatisch auch sein zugehöriger Loan-Eintrag gelöscht.
+Dieses Verhalten ist in einem Bibliothekssystem problematisch, da dadurch wichtige Verlaufsdaten verloren gehen würden.
+Deshalb ist RESTRICT hier die sinnvollere Wahl.
 
 ### Task 5c – Verify the composite primary key of `writes`
 
@@ -630,6 +655,11 @@ INSERT INTO writes VALUES (1, '978-0-201-96426-4');
 > an example from the library schema.
 >
 > *Your answer:*
+Ja, eine Relation kann mehrere Candidate Keys haben.
+Ein Beispiel aus dem Schema ist die Tabelle member:
+1- member_no ist der Primary Key
+2- email ist ebenfalls eindeutig und damit ein weiterer Candidate Key
+Der Primary Key ist also nur einer von mehreren möglichen Candidate Keys.
 
 ---
 
@@ -735,6 +765,7 @@ If you have not used `scp` before, work through this exercise first:
 > and all five relationships, and insert it here.
 >
 > `[insert screenshot]`
+<img width="2182" height="1326" alt="image" src="https://github.com/user-attachments/assets/c20ac9dc-761f-4248-9267-49b66aaba973" />
 
 Add `schema.svg` to `.gitignore` (it is generated, not authored):
 
@@ -779,6 +810,9 @@ reorder these joins freely. Under what condition would reordering a join change
 the *result* of a query? Under what condition is it always safe?
 
 > *Your answer:*
+Die Reihenfolge von Joins kann das Ergebnis verändern, wenn OUTER JOINs beteiligt sind, da diese auch nicht passende Tupel berücksichtigen.
+Bei reinen INNER JOINs ist die Reihenfolge hingegen egal, da nur passende Tupel kombiniert werden und die Operationen assoziativ sind.
+
 
 **Question B – NULL semantics:**  
 `return_date` is `NULL` for an open loan. `NULL` in SQL does not mean zero or
@@ -787,6 +821,8 @@ Will it return the open loans? Explain why or why not and write the correct
 form.
 
 > *Your answer:*
+Die Bedingung: "WHERE return_date = NULL" liefert keine Ergebnisse, da NULL nicht mit = verglichen werden kann.
+NULL steht für „unbekannt“, daher muss man schreiben: "WHERE return_date IS NULL;"
 
 **Question C – Surrogate vs. natural key:**  
 `book` uses `isbn` as its natural primary key; all other entities use surrogate
@@ -795,6 +831,8 @@ integer keys. Suppose the library occasionally receives books without an ISBN
 primary key? What design change would you make?
 
 > *Your answer:*
+Wenn Bücher ohne ISBN existieren, kann isbn nicht mehr als Primary Key verwendet werden, da ein Primary Key niemals NULL sein darf.
+Eine sinnvolle Lösung ist die Einführung eines künstlichen Schlüssels wie book_id als Primary Key, während isbn optional und weiterhin eindeutig (UNIQUE) bleiben kann.
 
 **Question D – Relational algebra limitations:**  
 Suppose the library wants to find all members who have borrowed the same copy
@@ -805,11 +843,20 @@ What does this tell you about the relationship between relational algebra and
 SQL?
 
 > *Your answer:*
+SQL:
+SELECT member_no, copy_no
+FROM loan
+GROUP BY member_no, copy_no
+HAVING COUNT(*) > 1;
+Diese Anfrage findet Mitglieder, die denselben Copy mehrfach ausgeliehen haben.
+Eine solche Abfrage ist mit den grundlegenden Operationen der relationalen Algebra (σ, π, ×, −) nicht möglich, da Aggregationen wie COUNT fehlen.
+Das zeigt, dass SQL mächtiger ist als die klassische relationale Algebra.
 
 > **Screenshot 4:** Take a screenshot of your terminal showing the output of
 > the query from Task 4d (the join across four relations), and insert it here.
 >
 > `[insert screenshot]`
+<img width="807" height="278" alt="Screenshot 2026-05-04 at 1 40 11 pm" src="https://github.com/user-attachments/assets/7add9f55-db84-4e0e-9412-3a3d7d577e0e" />
 
 ---
 
